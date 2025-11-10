@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Однорукий бандит</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0d0d0d;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    #gameBoard {
+      background: #1c1c29;
+      border: 3px solid #3a3a5a;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+      color: #4fc3f7;
+    }
+
+    #attempts {
+      margin-bottom: 1.2rem;
+      font-size: 1.2rem;
+      color: #bbb;
+    }
+
+    #spinBtn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 1rem 1.75rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    #spinBtn:hover:not(:disabled) {
+      background: #45a049;
+      transform: scale(1.05);
+    }
+
+    #spinBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #reels {
+      display: flex;
+      justify-content: space-between;
+      margin: 1.5rem 0;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .reel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .symbol {
+      width: 90px;
+      height: 90px;
+      background: #2a2a3f;
+      border: 2px solid #555;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .symbol img {
+      width: 85%;
+      height: 85%;
+      object-fit: contain;
+    }
+
+    .symbol.active {
+      background: #253a5a;
+      border-color: #4fc3f7;
+    }
+
+    #message {
+      margin-top: 1.2rem;
+      min-height: 2rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    #message.win {
+      color: #ffeb3b;
+    }
+
+    #message.lose {
+      color: #ff5252;
+    }
+
+    /* --- Адаптивність --- */
+    @media (max-width: 480px) {
+      #gameBoard {
+        padding: 1.25rem;
+      }
+
+      .symbol {
+        width: 70px;
+        height: 70px;
+      }
+
+      #spinBtn {
+        font-size: 1.1rem;
+        padding: 0.9rem 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameBoard">
+    <h2 id="playerName"></h2>
+    <div id="attempts">Спроба 0 з 3</div>
+    <button id="spinBtn">Generate</button>
+    <div id="reels"></div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    function askUserName() {
+      let name = prompt("Введіть ваше ім’я:");
+      while (!name || name.trim().length < 3 || !/^[A-Za-zА-Яа-яЇїІіЄєҐґ]+$/.test(name.trim())) {
+        name = prompt("Ім’я має містити лише літери та бути не коротше 3 символів. Спробуйте ще раз:");
+      }
+      return name.trim();
+    }
+
+    const userName = askUserName();
+
+    const symbols = [
+      "img1.png", 
+      "img2.png", 
+      "img3.png", 
+      "img4.png",
+      "img5.png"
+    ];
+
+    const MAX_ATTEMPTS = 3;
+    let attempts = 0;
+
+    const playerNameEl = document.getElementById("playerName");
+    const attemptsEl = document.getElementById("attempts");
+    const spinBtn = document.getElementById("spinBtn");
+    const reelsEl = document.getElementById("reels");
+    const messageEl = document.getElementById("message");
+
+    playerNameEl.textContent = `Гравець: ${userName}`;
+
+    function updateAttempts() {
+      attemptsEl.textContent = `Спроба ${attempts} з ${MAX_ATTEMPTS}`;
+    }
+
+    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+
+    function spin(isInitial = false) {
+      if (!isInitial) {
+        attempts++;
+        updateAttempts();
+      }
+
+      reelsEl.innerHTML = "";
+      messageEl.textContent = "";
+      messageEl.className = "";
+
+      const reels = [];
+      for (let i = 0; i < 3; i++) {
+        const reelSymbols = shuffle([...symbols]).slice(0, 3);
+        reels.push(reelSymbols);
+
+        const reelDiv = document.createElement("div");
+        reelDiv.classList.add("reel");
+
+        for (let row = 0; row < 3; row++) {
+          const symbolDiv = document.createElement("div");
+          symbolDiv.classList.add("symbol");
+          if (row === 1) symbolDiv.classList.add("active");
+
+          const img = document.createElement("img");
+          img.setAttribute("src", reelSymbols[row]);
+          img.setAttribute("alt", "symbol");
+
+          symbolDiv.appendChild(img);
+          reelDiv.appendChild(symbolDiv);
+        }
+
+        reelsEl.appendChild(reelDiv);
+      }
+
+      if (!isInitial) {
+        const mid = 1;
+        const win = reels[0][mid] === reels[1][mid] && reels[1][mid] === reels[2][mid];
+
+        if (win) {
+          messageEl.textContent = `Вітаємо, ${userName}! Ви виграли!`;
+          messageEl.classList.add("win");
+          spinBtn.disabled = true;
+        } else if (attempts >= MAX_ATTEMPTS) {
+          messageEl.textContent = "Ви програли. Спробуйте ще раз!";
+          messageEl.classList.add("lose");
+          spinBtn.disabled = true;
+        }
+      }
+    }
+
+    spinBtn.addEventListener("click", () => spin(false));
+    window.addEventListener("load", () => spin(true));
+  </script>
+</body>
+</html>
